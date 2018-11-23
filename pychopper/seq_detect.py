@@ -21,7 +21,7 @@ def random_seq(length):
     return ''.join([BASES[b] for b in np.random.random_integers(0, len(BASES) - 1, size=length)])
 
 
-def pair_align(reference, query, params=DEFAULT_ALIGN_PARAMS):
+def pair_align(reference, query, params=DEFAULT_ALIGN_PARAMS, trace=False):
     """ Perform pairwise local alignment using scikit-bio.
     :param reference: Reference sequence.
     :param query: Query sequence.
@@ -31,7 +31,11 @@ def pair_align(reference, query, params=DEFAULT_ALIGN_PARAMS):
     """
 
     subs_mat = parasail.matrix_create("ACGT", params['match'], params['mismatch'])
-    aln = parasail.sw_striped_32(reference, query, params['gap_open'], params['gap_extend'], subs_mat)
+    if trace:
+        # NOTE temp added _stats_table to report detailed alignment
+        aln = parasail.sw_trace_striped_32(reference, query, params['gap_open'], params['gap_extend'], subs_mat)
+    else:
+        aln = parasail.sw_striped_32(reference, query, params['gap_open'], params['gap_extend'], subs_mat)
 
     return aln
 

@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+import sys
+
 from collections import OrderedDict
 import numpy as np
 from pychopper import seq_utils as seu
@@ -56,7 +58,7 @@ def score_barcode(seq, barcode, aln_params):
     :rtype: Bool
     """
     aln = seq_detect.pair_align(
-        seq, str(barcode['seq'].seq), params=aln_params)
+        seq, str(barcode['seq'].seq), params=aln_params, trace=True)
 
     return (aln, aln.score >= barcode['score_cutoff'])
 
@@ -86,12 +88,18 @@ def score_barcode_group(reference, target_length, barcode_group, barcodes, aln_p
 
     target = str(reference)
     sm = np.zeros((4, 2), dtype=bool)
+    # sm[0,1] = première ligne, 2e colonne
+    # L0 : Alignement bc1 fwd début et fin
     aln_start, pass_start = score_barcode(
         target[:target_length], bc1, aln_params=aln_params)
     aln_end, pass_end = score_barcode(
         target[-target_length:], bc1, aln_params=aln_params)
     sm[0, 0], sm[0, 1] = pass_start, pass_end
+    __import__('ipdb').set_trace()
+    # TODO : stocker les CIGAR dans une autre matrice ou une list standard, et retourner une estimation de la position avec chaque alignement positif
+    sys.exit(0)
 
+    # L1 : Alignement bc2 fwd début et fin
     aln_start, pass_start = score_barcode(
         target[:target_length], bc2, aln_params=aln_params)
     aln_end, pass_end = score_barcode(
@@ -99,12 +107,14 @@ def score_barcode_group(reference, target_length, barcode_group, barcodes, aln_p
     sm[1, 0], sm[1, 1] = pass_start, pass_end
 
     target = seu.reverse_complement(target)
+    # L2 : Alignement bc1 rev début et fin
     aln_start, pass_start = score_barcode(
         target[:target_length], bc1, aln_params=aln_params)
     aln_end, pass_end = score_barcode(
         target[-target_length:], bc1, aln_params=aln_params)
     sm[2, 0], sm[2, 1] = pass_start, pass_end
 
+    # L3 : Alignement bc2 rev début et fin
     aln_start, pass_start = score_barcode(
         target[:target_length], bc2, aln_params=aln_params)
     aln_end, pass_end = score_barcode(

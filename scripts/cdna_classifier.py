@@ -13,7 +13,7 @@ from pychopper import report
 Parse command line arguments.
 """
 parser = argparse.ArgumentParser(
-    description='Tool to identify full length cDNA reads. Primers have to specified as they are on the forward strand.')
+    description='Tool to identify full length cDNA reads. Primers have to specified as they are on the forward strand.!!!!!DEVELOPMENT VERSION!!!!')
 parser.add_argument(
     '-b', metavar='barcodes', type=str, default=None, help="Primers fasta.", required=True)
 parser.add_argument(
