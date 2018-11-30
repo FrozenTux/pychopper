@@ -30,6 +30,7 @@ parser.add_argument(
     '-r', metavar='report_pdf', type=str, default=None, help="Report PDF.")
 parser.add_argument(
     '-u', metavar='unclass_output', type=str, default=None, help="Write unclassified reads to this file.")
+parser.add_argument('-a', metavar='aln_report', type=str, default=None, help="Alignment report file")
 parser.add_argument('input_fastx', metavar='input_fastx', type=str, help="Input file.")
 parser.add_argument('output_fastx', metavar='output_fastx', type=str, help="Output file.")
 
@@ -89,6 +90,8 @@ if __name__ == '__main__':
     output_handle = open(args.output_fastx, "w")
     if args.u is not None:
         unclass_handle = open(args.u, "w")
+    if args.a:
+        aln_handle = open(args.a, 'w')
 
     unclass_nr_hits = []
     fwd_matches = 0
@@ -102,12 +105,21 @@ if __name__ == '__main__':
 
     for read in seu.read_seq_records(args.input_fastx, args.i):
         pbar.update(_record_size(read, args.i))
-        match, nr_hits = list(chopper.score_barcode_groups(read, barcodes, args.t, ALIGN_PARAMS).values())[0]
+        match, nr_hits, alns = list(chopper.score_barcode_groups(read, barcodes, args.t, ALIGN_PARAMS).values())[0]
         if match is not None:
             if match == 'fwd_match':
                 fwd_matches += 1
             if match == 'rev_match':
                 rev_matches += 1
+
+            if args.a:
+                # Compute values for alignment report
+
+                # Write lines
+                aln_line = read.id + "\t" # 1 : read id
+                aln_line += match.split("_")[0] # 2: fwd or rev
+                # TODO
+
         read, match = _filter_and_annotate(read, match)
 
         if match is True:
@@ -125,6 +137,9 @@ if __name__ == '__main__':
     if args.u is not None:
         unclass_handle.flush()
         unclass_handle.close()
+    if args.a:
+        aln_handle.flush()
+        aln_handle.close()
 
     if args.r is not None:
         plotter = report.Report(args.r)

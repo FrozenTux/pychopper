@@ -89,14 +89,21 @@ def score_barcode_group(reference, target_length, barcode_group, barcodes, aln_p
     target = str(reference)
     sm = np.zeros((4, 2), dtype=bool)
     # sm[0,1] = première ligne, 2e colonne
+    alns = []
+    # We just need to save 4 alignments (start end start end) in the matrix
+    # the matrix above. The other ones are never useful (for now)
+
     # L0 : Alignement bc1 fwd début et fin
     aln_start, pass_start = score_barcode(
         target[:target_length], bc1, aln_params=aln_params)
     aln_end, pass_end = score_barcode(
         target[-target_length:], bc1, aln_params=aln_params)
     sm[0, 0], sm[0, 1] = pass_start, pass_end
-    __import__('ipdb').set_trace()
+    alns.append(aln_start)
     # TODO : stocker les CIGAR dans une autre matrice ou une list standard, et retourner une estimation de la position avec chaque alignement positif
+    # Dans l'objet aln : query représente le read, ref le barcode
+    # aln.cigar.decode donne le cigar lisible
+    # aln.cigar.beg_query et _ref donne la position de départ (0-indexée ?)
     sys.exit(0)
 
     # L1 : Alignement bc2 fwd début et fin
@@ -105,6 +112,7 @@ def score_barcode_group(reference, target_length, barcode_group, barcodes, aln_p
     aln_end, pass_end = score_barcode(
         target[-target_length:], bc2, aln_params=aln_params)
     sm[1, 0], sm[1, 1] = pass_start, pass_end
+    alns.append(aln_end)
 
     target = seu.reverse_complement(target)
     # L2 : Alignement bc1 rev début et fin
@@ -113,6 +121,7 @@ def score_barcode_group(reference, target_length, barcode_group, barcodes, aln_p
     aln_end, pass_end = score_barcode(
         target[-target_length:], bc1, aln_params=aln_params)
     sm[2, 0], sm[2, 1] = pass_start, pass_end
+    alns.append(aln_start)
 
     # L3 : Alignement bc2 rev début et fin
     aln_start, pass_start = score_barcode(
@@ -120,14 +129,15 @@ def score_barcode_group(reference, target_length, barcode_group, barcodes, aln_p
     aln_end, pass_end = score_barcode(
         target[-target_length:], bc2, aln_params=aln_params)
     sm[3, 0], sm[3, 1] = pass_start, pass_end
+    alns.append(aln_end)
 
     nr_hits = np.sum(sm)
 
     if np.all(sm == fwd_match):
-        return 'fwd_match', nr_hits
+        return 'fwd_match', nr_hits, alns[0:2]
     if np.all(sm == rev_match):
-        return 'rev_match', nr_hits
-    return None, nr_hits
+        return 'rev_match', nr_hits, alns[2:4]
+    return None, nr_hits, None
 
 
 def score_barcode_groups(reference, barcodes, target_length, aln_params):
