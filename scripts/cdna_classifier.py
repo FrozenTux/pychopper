@@ -5,9 +5,13 @@ import argparse
 from Bio import SeqIO
 import os
 import tqdm
+import HTSeq
 from pychopper import seq_utils as seu
 from pychopper import chopper
 from pychopper import report
+
+ALN_REPORT_HEADER_CONSTANT = ("read", "orientation")
+ALN_REPORT_HEADER_BARCODE = ("barcode start", "barcode end", "read start", "read end", "score", "cigar start pos", "cigar string")
 
 """
 Parse command line arguments.
@@ -77,6 +81,30 @@ def _record_size(read, in_format):
         raise Exception("Unkonwn format!")
     return bl
 
+def _make_barcode_line(aln):
+    # | means a tab
+    # bc start|bc end|read start|read end|score|actual start for the cigar|cigar
+    cigar_string = aln.cigar.decode.decode("utf-8")
+    cigar = HTSeq.parse_cigar(cigar_string)
+
+    bc_start = cigar_start = aln.cigar.beg_ref
+    for op in cigar:
+        if op.type != "D":
+            break
+        bc_start += op.size
+
+    read_start = aln.cigar.beg_query
+    for op in cigar:
+        if op.type != "I":
+            break
+        read_start += op.size
+
+    # add 1 to all alignment positions to make them 1-based
+    # TODO check in sam spec if CIGAR start pos should be 1-based too
+    values = [str(x) for x in (bc_start + 1, aln.end_ref + 1, read_start + 1, aln.end_query + 1, aln.score, cigar_start + 1, cigar_string)]
+    line = "\t".join(values)
+
+    return line
 
 if __name__ == '__main__':
     args = parser.parse_args()
@@ -92,6 +120,9 @@ if __name__ == '__main__':
         unclass_handle = open(args.u, "w")
     if args.a:
         aln_handle = open(args.a, 'w')
+        aln_handle.write("\t".join(ALN_REPORT_HEADER_CONSTANT) + "\t")
+        aln_handle.write("\t".join(["bc1 " + x for x in ALN_REPORT_HEADER_BARCODE]) + "\t")
+        aln_handle.write("\t".join(["bc2 " + x for x in ALN_REPORT_HEADER_BARCODE]) + "\n")
 
     unclass_nr_hits = []
     fwd_matches = 0
@@ -113,12 +144,12 @@ if __name__ == '__main__':
                 rev_matches += 1
 
             if args.a:
-                # Compute values for alignment report
-
-                # Write lines
+                # Write alignment report line
                 aln_line = read.id + "\t" # 1 : read id
-                aln_line += match.split("_")[0] # 2: fwd or rev
-                # TODO
+                aln_line += match.split("_")[0] + "\t" # 2: fwd or rev
+                aln_line += _make_barcode_line(alns[0]) + "\t" # 3 to 9 : bc1 values
+                aln_line += _make_barcode_line(alns[1]) + "\n" # 10 to 16 : bc2 values
+                aln_handle.write(aln_line)
 
         read, match = _filter_and_annotate(read, match)
 

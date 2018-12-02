@@ -13,6 +13,7 @@ requirements = [
     'matplotlib',
     'six',
     'tqdm',
+    'HTSeq',
 ]
 
 test_requirements = [

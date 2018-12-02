@@ -88,25 +88,19 @@ def score_barcode_group(reference, target_length, barcode_group, barcodes, aln_p
 
     target = str(reference)
     sm = np.zeros((4, 2), dtype=bool)
-    # sm[0,1] = première ligne, 2e colonne
     alns = []
     # We just need to save 4 alignments (start end start end) in the matrix
     # the matrix above. The other ones are never useful (for now)
 
-    # L0 : Alignement bc1 fwd début et fin
+    # L0 : bc1 fwd
     aln_start, pass_start = score_barcode(
         target[:target_length], bc1, aln_params=aln_params)
     aln_end, pass_end = score_barcode(
         target[-target_length:], bc1, aln_params=aln_params)
     sm[0, 0], sm[0, 1] = pass_start, pass_end
     alns.append(aln_start)
-    # TODO : stocker les CIGAR dans une autre matrice ou une list standard, et retourner une estimation de la position avec chaque alignement positif
-    # Dans l'objet aln : query représente le read, ref le barcode
-    # aln.cigar.decode donne le cigar lisible
-    # aln.cigar.beg_query et _ref donne la position de départ (0-indexée ?)
-    sys.exit(0)
 
-    # L1 : Alignement bc2 fwd début et fin
+    # L1 : bc2 fwd
     aln_start, pass_start = score_barcode(
         target[:target_length], bc2, aln_params=aln_params)
     aln_end, pass_end = score_barcode(
@@ -115,7 +109,7 @@ def score_barcode_group(reference, target_length, barcode_group, barcodes, aln_p
     alns.append(aln_end)
 
     target = seu.reverse_complement(target)
-    # L2 : Alignement bc1 rev début et fin
+    # L2 : bc1 rev
     aln_start, pass_start = score_barcode(
         target[:target_length], bc1, aln_params=aln_params)
     aln_end, pass_end = score_barcode(
@@ -123,7 +117,7 @@ def score_barcode_group(reference, target_length, barcode_group, barcodes, aln_p
     sm[2, 0], sm[2, 1] = pass_start, pass_end
     alns.append(aln_start)
 
-    # L3 : Alignement bc2 rev début et fin
+    # L3 : bc2 rev
     aln_start, pass_start = score_barcode(
         target[:target_length], bc2, aln_params=aln_params)
     aln_end, pass_end = score_barcode(
